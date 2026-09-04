@@ -58,14 +58,36 @@ export const orientationEvents: OrientationEvent[] = [
   },
 ];
 
+/** Lowercases, pads `9am` out to `9 am`, and collapses runs of whitespace. */
+function normalizeForSearch(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/(\d)\s*(am|pm)\b/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Time spellings an event answers to, so `9 AM` finds a session listed as `9:00 AM`. */
+function timeSearchTerms(time: string) {
+  const match = /^(\d{1,2}):(\d{2}) (AM|PM)$/i.exec(time.trim());
+  if (!match) return [time];
+
+  const [, hour, minute, meridiem] = match;
+  const terms = [`${hour}:${minute} ${meridiem}`];
+  if (minute === '00') terms.push(`${hour} ${meridiem}`);
+  return terms;
+}
+
 export function filterEvents(events: OrientationEvent[], query: string, category: string) {
-  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedQuery = normalizeForSearch(query);
 
   return events.filter((event) => {
     if (category !== 'all' && event.category !== category) return false;
     if (!normalizedQuery) return true;
 
-    const searchable = `${event.title} ${event.place} ${event.description}`.toLowerCase();
+    const searchable = normalizeForSearch(
+      `${event.title} ${event.place} ${event.description} ${timeSearchTerms(event.time).join(' ')}`,
+    );
     return searchable.includes(normalizedQuery);
   });
 }
