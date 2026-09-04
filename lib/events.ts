@@ -58,6 +58,35 @@ export const orientationEvents: OrientationEvent[] = [
   },
 ];
 
+/** A display time such as `9:00 AM`, captured as hour, minute, and meridiem. */
+const DISPLAY_TIME = /^(\d{1,2}):(\d{2})\s*([ap]m)$/i;
+
+/**
+ * The spellings a user might type for a display time such as `9:00 AM`.
+ *
+ * Search is a plain substring match, so every alternative has to be present in
+ * the haystack rather than inferred from the query. Times that do not parse
+ * fall back to the string as written.
+ */
+export function timeSearchTokens(time: string) {
+  const match = DISPLAY_TIME.exec(time.trim());
+  if (!match) return [time.trim().toLowerCase()];
+
+  const [, rawHour, minute, rawMeridiem] = match;
+  const hour = Number(rawHour);
+  const meridiem = rawMeridiem.toLowerCase();
+  const hour24 = meridiem === 'pm' ? (hour % 12) + 12 : hour % 12;
+
+  return [...new Set([
+    `${hour}:${minute} ${meridiem}`,
+    `${hour}:${minute}${meridiem}`,
+    `${hour} ${meridiem}`,
+    `${hour}${meridiem}`,
+    `${hour}:${minute}`,
+    `${String(hour24).padStart(2, '0')}:${minute}`,
+  ])];
+}
+
 export function filterEvents(events: OrientationEvent[], query: string, category: string) {
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -65,7 +94,8 @@ export function filterEvents(events: OrientationEvent[], query: string, category
     if (category !== 'all' && event.category !== category) return false;
     if (!normalizedQuery) return true;
 
-    const searchable = `${event.title} ${event.place} ${event.description}`.toLowerCase();
+    const times = timeSearchTokens(event.time).join(' ');
+    const searchable = `${event.title} ${event.place} ${event.description} ${times}`.toLowerCase();
     return searchable.includes(normalizedQuery);
   });
 }

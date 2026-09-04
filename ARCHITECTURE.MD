@@ -249,8 +249,13 @@ The event dataset is a statically declared array of `OrientationEvent` records. 
 predicates operate over it:
 
 - `filterEvents(events, query, category)` — case-insensitive substring match across a haystack
-  assembled from `title`, `place`, and `description`, intersected with a category equality check.
+  assembled from `title`, `place`, `description`, and the time spellings produced by
+  `timeSearchTokens`, intersected with a category equality check.
 - `filterEventsByDate(events, date)` — day-of-month equality, with `'all'` as the identity.
+- `timeSearchTokens(time)` — expands a display time such as `9:00 AM` into the spellings a user is
+  likely to type (`9:00 am`, `9:00am`, `9 am`, `9am`, `9:00`, and the 24-hour `09:00`). Because
+  search is a substring match, the alternatives must live in the haystack rather than be inferred
+  from the query. Times that do not parse fall back to the string as written.
 
 A third export, `applyAllOfTheOrientationFilteringStrategies`, evaluates all three dimensions in a
 single imperative pass. It is retained alongside the composable pair for comparative evaluation and
@@ -345,7 +350,7 @@ Two suites, executed by the Node built-in test runner with no external framework
 | Suite | Target |
 | --- | --- |
 | `test/chat-contract.test.ts` | Normalization bounds, sender narrowing, envelope round-trip, malformed-payload rejection |
-| `test/events.test.ts` | Category filtering, case-insensitive search, filter composition, date selection, summary pluralization |
+| `test/events.test.ts` | Category filtering, case-insensitive search, time search and its shorthands, filter composition, date selection, summary pluralization |
 
 Coverage is concentrated on the domain layer by design. The presentation and transport layers are
 not currently under automated test.
@@ -444,6 +449,7 @@ one suite. See Principle II.
 | `orientationEvents` | const | The dataset |
 | `filterEvents` | fn | Text and category predicate |
 | `filterEventsByDate` | fn | Day-of-month predicate |
+| `timeSearchTokens` | fn | Display-time spellings folded into the search haystack |
 | `applyAllOfTheOrientationFilteringStrategies` | fn | Single-pass equivalent, off the render path |
 | `findOrientationEventById` | fn | Identifier lookup |
 | `savedSummary` | fn | Bookmark count copy |
