@@ -22,6 +22,27 @@ test('search is case-insensitive and includes locations', () => {
   assert.deepEqual(results.map((event) => event.id), ['true-aggie', 'luminary']);
 });
 
+test('search matches an event time', () => {
+  assert.deepEqual(filterEvents(orientationEvents, '9:00 AM', 'all').map((event) => event.id), ['aggie-welcome']);
+  assert.deepEqual(filterEvents(orientationEvents, '7:30 pm', 'all').map((event) => event.id), ['true-aggie']);
+});
+
+test('time search tolerates shorthand and spacing variants', () => {
+  for (const query of ['9 AM', '9am', '9:00am', '  9:00   AM  ']) {
+    assert.deepEqual(
+      filterEvents(orientationEvents, query, 'all').map((event) => event.id),
+      ['aggie-welcome'],
+      `${query} should find the 9:00 AM welcome`,
+    );
+  }
+});
+
+test('a half-hour time only matches the event scheduled for it', () => {
+  assert.deepEqual(filterEvents(orientationEvents, '8:30 PM', 'all').map((event) => event.id), ['luminary']);
+  assert.deepEqual(filterEvents(orientationEvents, '8 PM', 'all'), []);
+  assert.deepEqual(filterEvents(orientationEvents, '3:00 AM', 'all'), []);
+});
+
 test('search and category filters compose', () => {
   const results = filterEvents(orientationEvents, 'quad', 'food');
   assert.deepEqual(results.map((event) => event.id), ['lunch-quad']);

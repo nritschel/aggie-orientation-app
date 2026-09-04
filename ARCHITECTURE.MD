@@ -249,7 +249,10 @@ The event dataset is a statically declared array of `OrientationEvent` records. 
 predicates operate over it:
 
 - `filterEvents(events, query, category)` — case-insensitive substring match across a haystack
-  assembled from `title`, `place`, and `description`, intersected with a category equality check.
+  assembled from `title`, `place`, `description`, and `time`, intersected with a category equality
+  check. Query and haystack both pass through a normalizer that collapses whitespace and pads
+  `9am` out to `9 am`; on-the-hour events also answer to the minuteless spelling, so `9 AM`,
+  `9am`, and `9:00 AM` all reach a session listed as `9:00 AM`.
 - `filterEventsByDate(events, date)` — day-of-month equality, with `'all'` as the identity.
 
 A third export, `applyAllOfTheOrientationFilteringStrategies`, evaluates all three dimensions in a
